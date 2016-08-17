@@ -11,7 +11,7 @@ public class Player : MonoBehaviour {
 	float accelerationTimeGrounded = .1f;
 
 	float gravity;
-	public float jumpVelocity;
+	float jumpVelocity;
 	Vector3 velocity;	
 	float velocityXSmoothing;
 
@@ -27,6 +27,7 @@ public class Player : MonoBehaviour {
 		gravity =  -(2 * jumpHeight)/ Mathf.Pow(timeToJumpApex,2);
 		jumpVelocity = Mathf.Abs(gravity) * timeToJumpApex;
 
+		velocity = new Vector3(0,0,0);
 	}
 
 	void Update() {

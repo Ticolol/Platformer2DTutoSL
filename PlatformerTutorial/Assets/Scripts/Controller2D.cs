@@ -13,6 +13,8 @@ public class Controller2D : MonoBehaviour {
 	float horizontalRaySpacing; //horizontal space between raycasts
 	float verticalRaySpacing; //vertical space between raycasts
 
+	float maxClimbAngle = 70;
+
 	BoxCollider2D collider;
 	RaycastOrigins raycastOrigins;	
 	public CollisionInfo collisions;
@@ -40,8 +42,10 @@ public class Controller2D : MonoBehaviour {
 		UpdateRaycastOrigins();
 		collisions.Reset();
 
+
 		if(velocity.x != 0)
 			HorizontalCollision(ref velocity);
+
 		if(velocity.y != 0)
 			VerticalCollision(ref velocity);
 
@@ -62,12 +66,32 @@ public class Controller2D : MonoBehaviour {
 			Debug.DrawRay(rayOrigin, Vector2.right * rayLength * directionX, Color.red);
 			
 			if(hit){
-				velocity.x = (hit.distance - skinWidth) * directionX;
-				rayLength = hit.distance;
 
-				//Set collisions left and right properly
-				collisions.left = directionX == -1;
-				collisions.right = directionX == 1;
+				float slopeAngle = Vector2.Angle(hit.normal, Vector2.up);
+				if(i==0 && slopeAngle <= maxClimbAngle){
+					//Corrections with slope distance
+					float distanceToSlopeStart = 0;
+					if(slopeAngle != collisions.slopeAngleOld){
+						distanceToSlopeStart = hit.distance - skinWidth;
+						velocity.x -= distanceToSlopeStart * directionX;
+					}
+					//ClimbSlope
+					ClimbSlope(ref velocity, slopeAngle);
+					velocity.x += distanceToSlopeStart * directionX;
+				}else{
+					//Correct velocity and length of ray
+					velocity.x = (hit.distance - skinWidth) * directionX;
+					rayLength = hit.distance;
+
+					//Correction of slope and wall from side combination
+					if(collisions.climbingSlope){
+						velocity.y = Mathf.Tan(collisions.slopeAngle * Mathf.Deg2Rad) * Mathf.Abs(velocity.x);
+					}
+
+					//Set collisions left and right properly
+					collisions.left = directionX == -1;
+					collisions.right = directionX == 1;
+				}
 			}
 		}
 	}
@@ -89,12 +113,39 @@ public class Controller2D : MonoBehaviour {
 				velocity.y = (hit.distance - skinWidth) * directionY;
 				rayLength = hit.distance;
 
+				//Correction of slope and wall from above combination
+				if(collisions.climbingSlope){
+					velocity.x = velocity.y / Mathf.Tan(collisions.slopeAngle * Mathf.Deg2Rad) * Mathf.Abs(velocity.x);
+				}
+
 				//Set collisions above and below properly
 				collisions.below = directionY == -1;
 				collisions.above = directionY == 1;
 			}
 		}
 	}
+
+	//Recalculate velocity vector to properly climb the slope
+	void ClimbSlope(ref Vector3 velocity, float slopeAngle){
+		float moveDistance = Mathf.Abs(velocity.x);
+		float climbVelocityY = Mathf.Sin(slopeAngle * Mathf.Deg2Rad) * moveDistance;
+
+		//Allow jumping on slope
+		if(velocity.y > climbVelocityY){
+			print("Jumping on slope");
+			//ISSUE: Can't jump descending the slope <====
+		}else{
+			velocity.y = climbVelocityY;
+			velocity.x = Mathf.Cos(slopeAngle * Mathf.Deg2Rad) * moveDistance * Mathf.Sign(velocity.x);
+			collisions.below = true;	
+			collisions.climbingSlope = true;
+			collisions.slopeAngle = slopeAngle;
+		}
+
+	}
+
+
+
 
 	void UpdateRaycastOrigins(){
 		Bounds bounds = collider.bounds;
@@ -126,9 +177,14 @@ public class Controller2D : MonoBehaviour {
 		public bool above, below;
 		public bool left, right;
 
+		public bool climbingSlope;
+		public float slopeAngle, slopeAngleOld;
+
 		public void Reset(){
 			above = below = false;
 			left = right = false;
+			climbingSlope = false;
+			slopeAngle = slopeAngleOld = 0;
 		}
 	}
 
