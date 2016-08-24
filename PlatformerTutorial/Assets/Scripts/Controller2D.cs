@@ -31,11 +31,15 @@ public class Controller2D : RaycastController {
 		collisions.Reset();
 		collisions.velocityOld = velocity;
 
+		//Apply face direction correctly
+		if(velocity.x != 0){
+			collisions.faceDir = (int)Mathf.Sign(velocity.x);
+		}
+
 		if(velocity.y < 0)
 			DescendSlope(ref velocity);
 
-		if(velocity.x != 0)
-			HorizontalCollision(ref velocity);
+		HorizontalCollision(ref velocity);
 
 		if(velocity.y != 0)
 			VerticalCollision(ref velocity);
@@ -48,8 +52,12 @@ public class Controller2D : RaycastController {
 	}
 
 	void HorizontalCollision(ref Vector3 velocity){
-		float directionX = Mathf.Sign(velocity.x);
+		float directionX = collisions.faceDir;
 		float rayLength = Mathf.Abs(velocity.x) + skinWidth;
+		//For wallSlide check, set a minimum amount of rayLength to the face direction
+		if(Mathf.Abs(velocity.x) < skinWidth){
+			rayLength = 2*skinWidth;//one to exit the collider and another to distantiate from wall
+		}
 		//draw vertical rays
 		for(int i=0; i < horizontalRayCount; i++){
 			//Bizarre yet quick n useful language
@@ -145,7 +153,7 @@ public class Controller2D : RaycastController {
 	}
 
 	//Recalculate velocity vector to properly climb the slope
-	void ClimbSlope(ref Vector3 velocity, float slopeAngle){
+	void ClimbSlope(ref Vector3 velocity, float slopeAngle){		
 		float moveDistance = Mathf.Abs(velocity.x);
 		float climbVelocityY = Mathf.Sin(slopeAngle * Mathf.Deg2Rad) * moveDistance;
 
@@ -207,6 +215,7 @@ public class Controller2D : RaycastController {
 		public float slopeAngle, slopeAngleOld;
 
 		public Vector3 velocityOld;
+		public int faceDir;//1 - right; -1 - left
 
 		public void Reset(){
 			above = below = false;
