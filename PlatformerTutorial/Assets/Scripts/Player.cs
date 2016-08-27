@@ -5,7 +5,8 @@ using System.Collections;
 public class Player : MonoBehaviour {
 
 	public float timeToJumpApex = .4f;
-	public float jumpHeight = 4;
+	public float maxJumpHeight = 4;
+	public float minJumpHeight = 1;
 	public float moveSpeed = 6;
 	float accelerationTimeAirborne = .2f;
 	float accelerationTimeGrounded = .1f;
@@ -18,7 +19,8 @@ public class Player : MonoBehaviour {
 
 
 	float gravity;
-	float jumpVelocity;
+	float maxJumpVelocity;
+	float minJumpVelocity;
 	Vector3 velocity;	
 	float velocityXSmoothing;
 	float timeToWallUnstick;
@@ -28,13 +30,15 @@ public class Player : MonoBehaviour {
 	void Start () {
 		controller = GetComponent<Controller2D>();
 
-		//jumpHeight = (gravity * timeToJumpApex^2) / 2
+		//maxJumpHeight = (gravity * timeToJumpApex^2) / 2
 		//
-		//gravity = (2 * jumpHeight)/timeToJumpApex^2
-		//jumpVelocity = gravity * timetoJumpApex
-		gravity =  -(2 * jumpHeight)/ Mathf.Pow(timeToJumpApex,2);
-		jumpVelocity = Mathf.Abs(gravity) * timeToJumpApex;
-
+		//gravity = (2 * maxJumpHeight)/timeToJumpApex^2
+		//maxJumpVelocity = gravity * timetoJumpApex
+		gravity =  -(2 * maxJumpHeight)/ Mathf.Pow(timeToJumpApex,2);
+		maxJumpVelocity = Mathf.Abs(gravity) * timeToJumpApex;
+		//vf^2 = vo^2 + 2*a*dist
+		//minJumpForce = sqrt(2 * gravity * minJumpHeight)
+		minJumpVelocity = Mathf.Sqrt(2 * Mathf.Abs(gravity) * minJumpHeight);
 		velocity = new Vector3(0,0,0);
 	}
 
@@ -83,7 +87,7 @@ public class Player : MonoBehaviour {
 		if(Input.GetKeyDown(KeyCode.Space)){
 			//Treats normal jumps
 			if(controller.collisions.below){
-				velocity.y = jumpVelocity;
+				velocity.y = maxJumpVelocity;
 			}
 			//Treats wall jumps
 			if(wallSliding){
@@ -102,11 +106,17 @@ public class Player : MonoBehaviour {
 				}
 			}
 		}
+		if(Input.GetKeyUp(KeyCode.Space)){
+			//Alterable Jump Height
+			if(velocity.y > minJumpVelocity){
+				velocity.y = minJumpVelocity;
+			}
+		}
 
 		velocity.y += gravity * Time.deltaTime;//accel goes powwed (^2)
 
 		//Apply velocity to move player
-		controller.Move(velocity * Time.deltaTime); 
+		controller.Move(velocity * Time.deltaTime, input); 
 	}
 	
 }

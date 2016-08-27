@@ -9,6 +9,7 @@ public class Controller2D : RaycastController {
 	float maxClimbAngle = 70;
 	float maxDescendAngle = 70;
 
+	Vector2 playerInput;//gets the player input
 
 	public override void Start(){	
 		base.Start();
@@ -25,11 +26,14 @@ public class Controller2D : RaycastController {
 		}
 	}*/
 
-
 	public void Move(Vector3 velocity, bool standingOnPlatform = false){
+		Move(velocity, Vector2.zero, standingOnPlatform);
+	}
+	public void Move(Vector3 velocity, Vector2 input, bool standingOnPlatform = false){
 		UpdateRaycastOrigins();
 		collisions.Reset();
 		collisions.velocityOld = velocity;
+		playerInput = input;
 
 		//Apply face direction correctly
 		if(velocity.x != 0){
@@ -121,6 +125,22 @@ public class Controller2D : RaycastController {
 			Debug.DrawRay(rayOrigin, Vector2.up * rayLength * directionY, Color.red);
 
 			if(hit){
+				//Through platforms
+				if(hit.collider.tag == "Through"){
+					if(directionY == 1 || hit.distance == 0)
+						continue;
+					if(collisions.fallingThroughPlatform){
+						continue;
+					}
+					if(playerInput.y == -1){						
+						//Set as falling through plaform
+						collisions.fallingThroughPlatform = true; 
+						//Prevent from being locked by moving platform
+						Invoke("ResetFallingThroughPlatform", .5);
+						continue;
+					}
+				}
+
 				velocity.y = (hit.distance - skinWidth) * directionY;
 				rayLength = hit.distance;
 
@@ -202,8 +222,10 @@ public class Controller2D : RaycastController {
 
 	}
 
-
-
+	//Resets value for falling through platform
+	void ResetFallingThroughPlatform(){
+		collisions.fallingThroughPlatform = false;
+	}
 
 
 
@@ -216,6 +238,7 @@ public class Controller2D : RaycastController {
 
 		public Vector3 velocityOld;
 		public int faceDir;//1 - right; -1 - left
+		public bool fallingThroughPlatform;
 
 		public void Reset(){
 			above = below = false;
