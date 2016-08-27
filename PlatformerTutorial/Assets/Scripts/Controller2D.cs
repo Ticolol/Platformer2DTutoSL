@@ -136,7 +136,7 @@ public class Controller2D : RaycastController {
 						//Set as falling through plaform
 						collisions.fallingThroughPlatform = true; 
 						//Prevent from being locked by moving platform
-						Invoke("ResetFallingThroughPlatform", .5);
+						Invoke("ResetFallingThroughPlatform", .5f);
 						continue;
 					}
 				}
