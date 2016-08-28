@@ -9,7 +9,8 @@ public class Controller2D : RaycastController {
 	float maxClimbAngle = 70;
 	float maxDescendAngle = 70;
 
-	Vector2 playerInput;//gets the player input
+	[HideInInspector]
+	public Vector2 playerInput;//gets the player input
 
 	public override void Start(){	
 		base.Start();

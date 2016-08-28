@@ -78,11 +78,6 @@ public class Player : MonoBehaviour {
 			}
 		}
 
-		//If not colliding above or below, reset vertical velocity to 0
-		if(controller.collisions.above || controller.collisions.below)
-			velocity.y = 0;
-
-
 		//Get jump inputs and apply to velocity
 		if(Input.GetKeyDown(KeyCode.Space)){
 			//Treats normal jumps
@@ -117,6 +112,13 @@ public class Player : MonoBehaviour {
 
 		//Apply velocity to move player
 		controller.Move(velocity * Time.deltaTime, input); 
+
+		//If not colliding above or below, reset vertical velocity to 0
+		if(controller.collisions.above || controller.collisions.below)
+			velocity.y = 0;
+
+
+			
 	}
 	
 }
