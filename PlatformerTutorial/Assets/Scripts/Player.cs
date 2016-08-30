@@ -27,6 +27,10 @@ public class Player : MonoBehaviour {
 
 	Controller2D controller;
 
+	Vector2 directionalInput;
+	bool wallSliding;
+	int wallDirX;
+
 	void Start () {
 		controller = GetComponent<Controller2D>();
 
@@ -40,34 +44,89 @@ public class Player : MonoBehaviour {
 		//minJumpForce = sqrt(2 * gravity * minJumpHeight)
 		minJumpVelocity = Mathf.Sqrt(2 * Mathf.Abs(gravity) * minJumpHeight);
 		velocity = new Vector3(0,0,0);
+		wallDirX = 0;		
 	}
 
-	void Update() {
-		//Get inputs for horizontal moviment
-		Vector2 input = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
-		int wallDirX = (controller.collisions.left) ? -1 : 1;
+	void Update() {				
+		print("Start Update =======<><><><><>");
+		CalculateVelocity();
+		HandleWallSliding();
 
+		//Apply velocity to move player
+		print(velocity);
+		controller.Move(velocity * Time.deltaTime, directionalInput); 
+
+		//If not colliding above or below, reset vertical velocity to 0
+		if(controller.collisions.above || controller.collisions.below)
+			velocity.y = 0;			
+	}
+
+	//Separate the input in a new class
+	public void SetDirectionalInput(Vector2 input){
+		directionalInput = input;
+	}
+
+	//Implements jump down
+	public void OnJumpInputDown(){
+		//Treats normal jumps
+		if(controller.collisions.below){
+			velocity.y = maxJumpVelocity;
+		}
+		//Treats wall jumps
+		if(wallSliding){
+			//WallJumpClimb
+			if(wallDirX == directionalInput.x){
+				print("WallJumpClimb");
+				velocity.x = -wallDirX * wallJumpClimb.x;
+				velocity.y = wallJumpClimb.y;
+			//WallJumpOff
+			}else if(directionalInput.x == 0){
+				print("WallJumpOff");
+				velocity.x = -wallDirX * wallJumpOff.x;
+				velocity.y = wallJumpOff.y;
+			//WallJumpLeap
+			}else{
+				print("WallJumpLeap");
+				velocity.x = -wallDirX * wallJumpLeap.x;
+				velocity.y = wallJumpLeap.y;
+			}
+		}
+	}
+
+	//Implements jump up
+	public void OnJumpInputUp(){
+		//Alterable Jump Height
+		if(velocity.y > minJumpVelocity){
+			velocity.y = minJumpVelocity;
+		}
+	}
+
+	void CalculateVelocity(){		
 		//Applying values to vertical and horizontal velocities
-		float targetVelocityX = input.x * moveSpeed;
+		float targetVelocityX = directionalInput.x * moveSpeed;
 		//RESEARCH THIS COMMAND
 		velocity.x = Mathf.SmoothDamp(velocity.x, targetVelocityX, ref velocityXSmoothing, 
 			controller.collisions.below ? accelerationTimeGrounded : accelerationTimeAirborne);
-		
+		velocity.y += gravity * Time.deltaTime;//accel goes powwed (^2)
+	}
 
+	void HandleWallSliding(){		
+		wallDirX = (controller.collisions.left) ? -1 : 1;
 		//Check for wallSlide and wallJump possibility
-		bool wallSliding = false;
+		wallSliding = false;
 		if((controller.collisions.left || controller.collisions.right) && !controller.collisions.below){
 			wallSliding = true;
 			//max descent speed must be wallSlideMaxSpeed
 			if(velocity.y < -wallSlideMaxSpeed){
 				velocity.y = -wallSlideMaxSpeed;
+				print("wallDown");
 			}
 			//Stick to wall before jump
 			if(timeToWallUnstick > 0){
 				velocity.x = 0;
 				velocityXSmoothing = 0;
 				//Start to count time when player goes into wall's opposite direction
-				if(input.x != wallDirX && input.x != 0){
+				if(directionalInput.x != wallDirX && directionalInput.x != 0){
 					timeToWallUnstick -= Time.deltaTime;
 				}else{
 					timeToWallUnstick = wallStickTime;
@@ -77,48 +136,6 @@ public class Player : MonoBehaviour {
 				timeToWallUnstick = wallStickTime;	
 			}
 		}
-
-		//Get jump inputs and apply to velocity
-		if(Input.GetKeyDown(KeyCode.Space)){
-			//Treats normal jumps
-			if(controller.collisions.below){
-				velocity.y = maxJumpVelocity;
-			}
-			//Treats wall jumps
-			if(wallSliding){
-				//WallJumpClimb
-				if(wallDirX == input.x){
-					velocity.x = -wallDirX * wallJumpClimb.x;
-					velocity.y = wallJumpClimb.y;
-				//WallJumpOff
-				}else if(wallDirX == 0){
-					velocity.x = -wallDirX * wallJumpOff.x;
-					velocity.y = wallJumpOff.y;
-				//WallJumpLeap
-				}else{
-					velocity.x = -wallDirX * wallJumpLeap.x;
-					velocity.y = wallJumpLeap.y;
-				}
-			}
-		}
-		if(Input.GetKeyUp(KeyCode.Space)){
-			//Alterable Jump Height
-			if(velocity.y > minJumpVelocity){
-				velocity.y = minJumpVelocity;
-			}
-		}
-
-		velocity.y += gravity * Time.deltaTime;//accel goes powwed (^2)
-
-		//Apply velocity to move player
-		controller.Move(velocity * Time.deltaTime, input); 
-
-		//If not colliding above or below, reset vertical velocity to 0
-		if(controller.collisions.above || controller.collisions.below)
-			velocity.y = 0;
-
-
-			
 	}
 	
 }
