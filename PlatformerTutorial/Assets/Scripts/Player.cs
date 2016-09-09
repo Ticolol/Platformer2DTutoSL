@@ -17,7 +17,6 @@ public class Player : MonoBehaviour {
 	public float wallSlideMaxSpeed = 3f;
 	public float wallStickTime = .25f;
 
-
 	float gravity;
 	float maxJumpVelocity;
 	float minJumpVelocity;
@@ -30,6 +29,7 @@ public class Player : MonoBehaviour {
 	Vector2 directionalInput;
 	bool wallSliding;
 	int wallDirX;
+	bool jumpInputUp, jumpInputDown;
 
 	void Start () {
 		controller = GetComponent<Controller2D>();
@@ -44,13 +44,18 @@ public class Player : MonoBehaviour {
 		//minJumpForce = sqrt(2 * gravity * minJumpHeight)
 		minJumpVelocity = Mathf.Sqrt(2 * Mathf.Abs(gravity) * minJumpHeight);
 		velocity = new Vector3(0,0,0);
-		wallDirX = 0;		
+		wallDirX = 0;
+		jumpInputUp = false;		
+		jumpInputDown = false;		
 	}
 
 	void Update() {				
 		print("Start Update =======<><><><><>");
 		CalculateVelocity();
 		HandleWallSliding();
+
+		//Handles jump
+		HandleJump();
 
 		//Apply velocity to move player
 		print(velocity);
@@ -61,13 +66,31 @@ public class Player : MonoBehaviour {
 			velocity.y = 0;			
 	}
 
+	void HandleJump(){
+		if(jumpInputDown){
+			OnJumpDown();
+		}
+		if(jumpInputUp){
+			OnJumpUp();
+		}
+	}
+
 	//Separate the input in a new class
 	public void SetDirectionalInput(Vector2 input){
 		directionalInput = input;
 	}
 
-	//Implements jump down
 	public void OnJumpInputDown(){
+		jumpInputDown = true;
+	}
+
+	public void OnJumpInputUp(){		
+		jumpInputUp = true;
+	}
+
+	//Implements jump down
+	public void OnJumpDown(){
+		jumpInputDown = false;
 		//Treats normal jumps
 		if(controller.collisions.below){
 			velocity.y = maxJumpVelocity;
@@ -94,7 +117,8 @@ public class Player : MonoBehaviour {
 	}
 
 	//Implements jump up
-	public void OnJumpInputUp(){
+	public void OnJumpUp(){
+		jumpInputUp = false;
 		//Alterable Jump Height
 		if(velocity.y > minJumpVelocity){
 			velocity.y = minJumpVelocity;
